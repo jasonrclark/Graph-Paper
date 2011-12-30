@@ -15,7 +15,8 @@ function taller(times) {
 function wider(times) {
     var result = "";
     repeat(function() { result += newColumn(); }, times);
-    $(".container").append(result);
+    var width = (columnCount() + times) * 12;
+    $(".container").width(width).append(result);
 }
 
 function expand(times) {
