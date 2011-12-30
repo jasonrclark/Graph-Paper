@@ -5,7 +5,14 @@ $(document).ready(function() {
     $("#expand").click(function(e) { expand(); });
     $("#expandTen").click(function(e) { expand(10); });
     $(".changesize").click(function(e) { updateTitle(); });
+    
+    extractDefaultsFromDocument();
 });
+
+var columnWidth;
+var newCellHtml;
+var newColumnHtmlStart;
+var newColumnHtmlEnd;
 
 function taller(times) {
    var result = repeat(newCell, times);
@@ -13,10 +20,9 @@ function taller(times) {
 }
 
 function wider(times) {
-    var result = "";
-    repeat(function() { result += newColumn(); }, times);
-    var width = (columnCount() + times) * 12;
-    $(".container").width(width).append(result);
+    var result = repeat(newColumn, times);
+    $(".container").append(result);
+    updateContainerWidth();
 }
 
 function expand(times) {
@@ -34,20 +40,46 @@ function repeat(func, times) {
 }
 
 function newCell() {
-    return "<div></div>";
+    return newCellHtml;
 }
 
 function newColumn() {
-    var result = "<div class=\"column\">";
-    repeat(function() { result += "<div></div>"; }, rowCount());
-    result += "</div>";
-    return result;
+    return newColumnHtmlStart + 
+        repeat(newCell, rowCount()) +
+        newColumnHtmlEnd;
 }
 
 function updateTitle() {
     document.title = columnCount() + "x" + rowCount();
 }
 
-function columnCount() { return $(".column").length; }
-function rowCount() { return $(".column:first div").length; }
+function updateContainerWidth() {
+    $(".container").width(columnCount() * columnWidth);
+}
 
+function columnCount() { 
+    return $(".column").length; 
+}
+
+function rowCount() { 
+    return $(".column:first div").length; 
+}
+
+function outerHtml(j) {
+    return $("<div>").append(j.clone()).html();   
+}
+
+function extractDefaultsFromDocument() {
+    var firstCell = $(".column div:first");
+    columnWidth = firstCell[0].offsetWidth;
+    newCellHtml = outerHtml(firstCell);
+    
+    var firstColumn = $(".column:first");
+    var innerColumn = firstColumn.html();
+    var outerColumn = outerHtml(firstColumn.clone());
+    var containerHtml = outerColumn.replace(innerColumn, "---");
+    
+    var containerParts = containerHtml.split("---");
+    newColumnHtmlStart = containerParts[0];
+    newColumnHtmlEnd = containerParts[1];
+}
