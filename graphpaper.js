@@ -1,128 +1,162 @@
-$(document).ready(function() {
-    wireUpEvents();
-    extractDefaultsFromDocument();
-    setInitialSize();
-});
+var GraphPaper = (function() {
+    var columnWidth;
+    var newCellHtml;
+    var newColumnHtmlStart;
+    var newColumnHtmlEnd;
 
-var columnWidth;
-var newCellHtml;
-var newColumnHtmlStart;
-var newColumnHtmlEnd;
+    var mouseIsDown = false;
+    
+    var columns = 1;
+    var rows = 1;
 
-var mouseIsDown = false;
-
-function taller(times) {
-   var result = repeat(newCell, times);
-    $(".column").each(function (i,e) { $(e).append($(result)); });
-}
-
-function wider(times) {
-    var result = repeat(newColumn, times);
-    $(".container").append(result);
-    updateContainerWidth();
-}
-
-function expand(times) {
-    wider(times);
-    taller(times);
-}
-
-function repeat(func, times) {
-    var result = "";
-    times = times || 1;
-    for (var i = 0; i < times; i++) {
-        result += func(); 
+    function init() {
+        $(document).ready(function() {
+            wireUpEvents();
+            extractDefaultsFromDocument();
+            setInitialSize();
+        });
+    };
+    
+    function taller(times) {
+        times = defaultTimes(times);
+        $(".column").each(function (i,e) { 
+            $(e).append($(newCells(times))); 
+        });
+        rows += times;
     }
-    return result;
-}
 
-function newCell() {
-    return newCellHtml;
-}
+    function wider(times) {
+        times = defaultTimes(times);
+        $(".container").append(newColumns(times));
+        columns += times;
+    }
+    
+    function defaultTimes(times) {
+        return (typeof times !== "number") ? 1 : times;
+    }
 
-function newColumn() {
-    return newColumnHtmlStart + 
-        repeat(newCell, rowCount()) +
-        newColumnHtmlEnd;
-}
+    function expand(times) {
+        wider(times);
+        taller(times);
+    }
 
-function onSizeChanged() {
-    updateTitle();
-    updateContainerWidth();
-    showNewCells();
-}
+    function repeat(str, times) {
+        return new Array(times + 1).join(str);
+    }
 
-function updateTitle() {
-    document.title = columnCount() + "x" + rowCount();
-}
+    function newCells(times) {
+        return repeat(newCellHtml, times);
+    }
 
-function updateContainerWidth() {
-    $(".container").width(columnCount() * columnWidth);
-}
+    function newColumns(times) {
+        return repeat(
+            newColumnHtmlStart + newCells(rows) + newColumnHtmlEnd,
+            times);
+    }
 
-function showNewCells() {
-    $(".hidden").fadeIn("slow", function(e) {
-        $(".hidden").removeClass("hidden");
-    });
-}
+    function onSizeChanged() {
+        updateTitle();
+        updateContainerWidth();
+        showNewCells();
+    }
 
-function columnCount() { 
-    return $(".column").length; 
-}
+    function updateTitle() {
+        document.title = columns + "x" + rows;
+    }
 
-function rowCount() { 
-    return $(".column:first div").length; 
-}
+    function updateContainerWidth() {
+        $(".container").width(columns * columnWidth);
+    }
 
-function outerHtml(j) {
-    return $("<div>").append(j.clone()).html();   
-}
+    function showNewCells() {
+        $(".hidden").fadeIn("slow", function(e) {
+            $(".hidden").removeClass("hidden");
+        });
+    }
 
-function setMouseDown() { mouseIsDown = true; }
-function setMouseUp() { mouseIsDown = false; }
+    // for convenience, patch jQuery with outerHtml support
+    $.fn.outerHtml = function() {
+        return $("<div>").append(this.clone()).html();   
+    }
 
-function wireUpEvents() {
-    $(".container").
-        click(function(e) { $(e.target).toggleClass("clicked"); }).
-        mousemove(function(e) {
-            if (mouseIsDown) 
-                $(e.target).addClass("clicked");
-            return false;   // prevent propagation so body mousemove can clear mousedown
-        }).
-        mousedown(setMouseDown).
-        mouseup(setMouseUp);
+    function setMouseDown() { 
+        mouseIsDown = true; 
+    }
+    
+    function setMouseUp() { 
+        mouseIsDown = false; 
+    }
+    
+    function toggleCell(e) {
+        $(e.target).toggleClass("clicked");
+    }
+    
+    function markCell(e) {
+        $(e.target).addClass("clicked");
+    }
+    
+    function markCellIfMouseDown(e) {
+        if (mouseIsDown)
+            markCell(e);
+        return false; // prevent propagation so body mousemove can clear mousedown
+    }
+
+    function wireUpEvents() {
+        $(".container").
+            click(toggleCell).
+            mousemove(markCellIfMouseDown).
+            mousedown(setMouseDown).
+            mouseup(setMouseUp);
         
-    $(document.body).mousemove(setMouseUp);
-    
-    $("#wider").click(function(e) { wider(); });
-    $("#taller").click(function(e) { taller(); });
-    $("#expand").click(function(e) { expand(); });
-    $("#expandTen").click(function(e) { expand(10); showNewCells(); });
-    $(".changesize").click(function(e) { onSizeChanged(); });
-}
+        // if we've left the container, clear our mouse setting
+        $(document.body).mousemove(setMouseUp);
+        
+        $("#wider").click(wider);
+        $("#taller").click(taller);
+        $("#expand").click(expand);
+        $("#expandTen").click(function(e) { expand(10); });
+        
+        $(".changesize").click(onSizeChanged);
+    }
 
-function extractDefaultsFromDocument() {
-    // capture initial cell markup
-    newCellHtml = outerHtml($(".column div:first"));
+    function extractDefaultsFromDocument() {
+        // capture initial cell markup
+        newCellHtml = $(".column div:first").outerHtml();
 
-    // show so the width is available on initial cell
-     showNewCells();
-    columnWidth = $(".column div:first")[0].offsetWidth;
-    
-    // capture columns
-    var firstColumn = $(".column:first");
-    var innerColumn = firstColumn.html();
-    var outerColumn = outerHtml(firstColumn.clone());
-    var containerHtml = outerColumn.replace(innerColumn, "---");
-    
-    var containerParts = containerHtml.split("---");
-    newColumnHtmlStart = containerParts[0];
-    newColumnHtmlEnd = containerParts[1];
-}
+        // show so the width is available on initial cell
+        showNewCells();
+        columnWidth = $(".column div:first")[0].offsetWidth;
+        
+        // capture initial column markup
+        var firstColumn = $(".column:first");
+        var innerColumn = firstColumn.html();
+        var outerColumn = firstColumn.clone().outerHtml();
+        var containerHtml = outerColumn.replace(innerColumn, "---");
+        
+        var containerParts = containerHtml.split("---");
+        newColumnHtmlStart = containerParts[0];
+        newColumnHtmlEnd = containerParts[1];
+    }
 
-function setInitialSize() {
-    setTimeout(function() {
-            expand(9);
+    function setInitialSize() {
+        setTimeout(
+            withShow(function() { expand(9); }), 
+            500);
+    }
+    
+    function withShow(func) {
+        return function() {
+            func();
             onSizeChanged();
-    }, 500);
-}
+        };
+    }
+    
+    return {
+        init: init,
+        taller: withShow(taller),
+        wider: withShow(wider),
+        expand: withShow(expand),
+    }
+})();
+
+GraphPaper.init(document);
