@@ -107,6 +107,6 @@ function extractDefaultsFromDocument() {
 function setInitialSize() {
     setTimeout(function() {
             expand(9);
-            showNewCells();
+            onSizeChanged();
     }, 500);
 }
