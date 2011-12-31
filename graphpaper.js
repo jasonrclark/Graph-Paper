@@ -9,6 +9,8 @@ var newCellHtml;
 var newColumnHtmlStart;
 var newColumnHtmlEnd;
 
+var mouseIsDown = false;
+
 function taller(times) {
    var result = repeat(newCell, times);
     $(".column").each(function (i,e) { $(e).append($(result)); });
@@ -76,8 +78,22 @@ function outerHtml(j) {
     return $("<div>").append(j.clone()).html();   
 }
 
+function setMouseDown() { mouseIsDown = true; }
+function setMouseUp() { mouseIsDown = false; }
+
 function wireUpEvents() {
-    $(".container").click(function(e) { $(e.target).toggleClass("clicked"); });
+    $(".container").
+        click(function(e) { $(e.target).toggleClass("clicked"); }).
+        mousemove(function(e) {
+            if (mouseIsDown) 
+                $(e.target).addClass("clicked");
+            return false;   // prevent propagation so body mousemove can clear mousedown
+        }).
+        mousedown(setMouseDown).
+        mouseup(setMouseUp);
+        
+    $(document.body).mousemove(setMouseUp);
+    
     $("#wider").click(function(e) { wider(); });
     $("#taller").click(function(e) { taller(); });
     $("#expand").click(function(e) { expand(); });
