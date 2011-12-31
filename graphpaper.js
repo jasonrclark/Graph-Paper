@@ -1,12 +1,7 @@
 $(document).ready(function() {
-    $(".container").click(function(e) { $(e.target).toggleClass("clicked"); });
-    $("#wider").click(function(e) { wider(); });
-    $("#taller").click(function(e) { taller(); });
-    $("#expand").click(function(e) { expand(); });
-    $("#expandTen").click(function(e) { expand(10); });
-    $(".changesize").click(function(e) { updateTitle(); });
-    
+    wireUpEvents();
     extractDefaultsFromDocument();
+    setInitialSize();
 });
 
 var columnWidth;
@@ -49,12 +44,24 @@ function newColumn() {
         newColumnHtmlEnd;
 }
 
+function onSizeChanged() {
+    updateTitle();
+    updateContainerWidth();
+    showNewCells();
+}
+
 function updateTitle() {
     document.title = columnCount() + "x" + rowCount();
 }
 
 function updateContainerWidth() {
     $(".container").width(columnCount() * columnWidth);
+}
+
+function showNewCells() {
+    $(".hidden").fadeIn("slow", function(e) {
+        $(".hidden").removeClass("hidden");
+    });
 }
 
 function columnCount() { 
@@ -69,11 +76,24 @@ function outerHtml(j) {
     return $("<div>").append(j.clone()).html();   
 }
 
+function wireUpEvents() {
+    $(".container").click(function(e) { $(e.target).toggleClass("clicked"); });
+    $("#wider").click(function(e) { wider(); });
+    $("#taller").click(function(e) { taller(); });
+    $("#expand").click(function(e) { expand(); });
+    $("#expandTen").click(function(e) { expand(10); showNewCells(); });
+    $(".changesize").click(function(e) { onSizeChanged(); });
+}
+
 function extractDefaultsFromDocument() {
-    var firstCell = $(".column div:first");
-    columnWidth = firstCell[0].offsetWidth;
-    newCellHtml = outerHtml(firstCell);
+    // capture initial cell markup
+    newCellHtml = outerHtml($(".column div:first"));
+
+    // show so the width is available on initial cell
+     showNewCells();
+    columnWidth = $(".column div:first")[0].offsetWidth;
     
+    // capture columns
     var firstColumn = $(".column:first");
     var innerColumn = firstColumn.html();
     var outerColumn = outerHtml(firstColumn.clone());
@@ -82,4 +102,11 @@ function extractDefaultsFromDocument() {
     var containerParts = containerHtml.split("---");
     newColumnHtmlStart = containerParts[0];
     newColumnHtmlEnd = containerParts[1];
+}
+
+function setInitialSize() {
+    setTimeout(function() {
+            expand(9);
+            showNewCells();
+    }, 500);
 }
