@@ -22,7 +22,7 @@ div {
 
 .column div.clicked {
     background:gray;
-    border-color:gray;
+    border-color:black;
 }
 
 div.hidden {
